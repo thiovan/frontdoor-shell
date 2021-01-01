@@ -103,7 +103,8 @@ if (isset($_GET["feature"])) {
         } else {
             $response = array(
                 "stdout" => ["Please input correct password to continue..."],
-                "cwd" => "Login"
+                "cwd" => "Login",
+                "files" => [""]
             );
         }
     } else {
