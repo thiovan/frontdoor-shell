@@ -1,5 +1,7 @@
 <?php
-session_set_cookie_params(1800);
+ini_set('log_errors', 'off');
+ini_set('display_errors', 'off');
+session_set_cookie_params(0);
 session_start();
 session_regenerate_id(true);
 
